@@ -1,15 +1,16 @@
 import { Injectable, Name, OrmMetadata, Logger, LoggerCore, ClsNamespaceService, TransactionT } from 'miter';
 import { TransactionImpl } from './impl/transaction-impl';
 import * as __Sequelize from 'sequelize';
+import { SequelizeORMService } from '../services/sequelize-orm.service';
 
 @Injectable()
 @Name('orm')
 export class Sequelize {
     constructor(
+        private ormService: SequelizeORMService,
         private ormMeta: OrmMetadata,
         private loggerCore: LoggerCore,
-        private logger: Logger,
-        private namespace: ClsNamespaceService
+        private logger: Logger
     ) {
         this.sqlLogger = Logger.fromSubsystem(this.loggerCore, 'sql');
     }
@@ -62,10 +63,10 @@ export class Sequelize {
     }
     
     get currentTransaction(): TransactionT | undefined {
-        return this.namespace.get('transaction');
+        return this.ormService.currentTransaction
     }
     set currentTransaction(val: TransactionT | undefined) {
-        this.namespace.set('transaction', val);
+        this.ormService.currentTransaction = val;
     }
     
     async transaction(transactionName: string, transaction?: TransactionT | null): Promise<TransactionT> {

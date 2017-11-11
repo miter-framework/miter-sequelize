@@ -21,24 +21,26 @@ type AssociationTypeDef = {
 @Name('miter-sequelize')
 export class SequelizeORMService extends ORMService {
     constructor(
-        private injector: Injector,
+        injector: Injector,
+        namespace: ClsNamespaceService,
         private logger: Logger,
         private loggerCore: LoggerCore,
-        private sql: Sequelize,
         private ormMeta: OrmMetadata,
-        private ormTransform: OrmTransformService,
-        namespace: ClsNamespaceService
+        private ormTransform: OrmTransformService
     ) {
-        super(namespace);
+        super(injector, namespace);
         this.dbImplLogger = this.loggerCore.getSubsystem('db-impl');
     }
     
     private dbImplLogger: Logger;
+    private sql: Sequelize;
     
     async start() {
         this.logger.verbose(`Initializing ORM...`);
         
-        this.transactionService = this.injector.resolveInjectable(TransactionService)!;
+        await super.start();
+        
+        this.sql = this.injector.resolveInjectable(Sequelize)!;
         
         await this.sql.init();
         
@@ -53,16 +55,9 @@ export class SequelizeORMService extends ORMService {
     }
     
     async stop() {
+        await super.stop();
+        
         await this.sql.close();
-    }
-    
-    private transactionService: TransactionService;
-    
-    get currentTransaction(): TransactionT | undefined {
-        return this.sql.currentTransaction;
-    }
-    set currentTransaction(value: TransactionT | undefined) {
-        this.sql.currentTransaction = value;
     }
     
     transaction(transactionName: string, transaction: TransactionT | null | undefined) {
