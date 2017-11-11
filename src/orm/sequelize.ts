@@ -53,6 +53,10 @@ export class Sequelize {
         return await this.sql.sync({force: recreate});
     }
     
+    async close() {
+        this.sql.close();
+    }
+    
     define(modelName: string, attributes: __Sequelize.DefineAttributes, options: __Sequelize.DefineOptions<{}>) {
         return this.sql.define(modelName, attributes, options);
     }
