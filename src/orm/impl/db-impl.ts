@@ -1,9 +1,7 @@
-import * as Sql from 'sequelize';
-import * as _ from 'lodash';
-
 //Models and Interfaces
 import { StaticModelT, ModelT, PkType, Db, QueryT, FindOrCreateQueryT, CountQueryT,
-         DestroyQueryT, CountAllResults, CtorT, TransactionT } from 'miter';
+         DestroyQueryT, CountAllResults, CtorT, TransactionT, Logger, TransactionService,
+         WhereOptions } from 'miter';
 
 //Decorators
 import { Transaction, Name, Types } from 'miter';
@@ -14,10 +12,10 @@ import { PropMetadata, PropMetadataSym, ModelPropertiesSym, ForeignModelSource,
          ModelHasOneAssociationsSym, HasOneMetadataSym, HasOneMetadata,
          ModelHasManyAssociationsSym, HasManyMetadataSym, HasManyMetadata } from 'miter';
 
-import { Logger } from '../../services/logger';
-import { Sequelize } from '../sequelize';
-import { TransactionService } from '../../services/transaction.service';
+import * as Sql from 'sequelize';
+import * as _ from 'lodash';
 
+import { Sequelize } from '../sequelize';
 import { TransactionImpl } from './transaction-impl';
 
 type CopyValMeta = {
@@ -94,7 +92,7 @@ export class DbImpl<T extends ModelT<PkType>, TInstance, TAttributes> implements
         }
     }
     
-    async findById(id: string | number, options?: QueryT, transaction?: TransactionImpl) {
+    async findById(id: string | number, options?: QueryT<T>, transaction?: TransactionImpl) {
         let sqlTransact = this.getSqlTransact(transaction);
         let implicitIncludes: string[] = [];
         if (options) [options, implicitIncludes] = this.transformQuery(options);
@@ -102,7 +100,7 @@ export class DbImpl<T extends ModelT<PkType>, TInstance, TAttributes> implements
         let result = await this.model.findById(id, _.merge({}, { transaction: sqlTransact }, options));
         return result && this.wrapResult(result, implicitIncludes);
     }
-    async findOne(query: QueryT, transaction?: TransactionImpl) {
+    async findOne(query: QueryT<T>, transaction?: TransactionImpl) {
         let sqlTransact = this.getSqlTransact(transaction);
         let implicitIncludes: string[] = [];
         [query, implicitIncludes] = this.transformQuery(query);
@@ -118,7 +116,7 @@ export class DbImpl<T extends ModelT<PkType>, TInstance, TAttributes> implements
             return result && this.wrapResult(result, implicitIncludes);
         }
     }
-    async findOrCreate(query: Sql.WhereOptions, defaults?: Object | T, transaction?: TransactionImpl): Promise<[T, boolean]> {
+    async findOrCreate(query: WhereOptions<T>, defaults?: Object | T, transaction?: TransactionImpl): Promise<[T, boolean]> {
         let sqlTransact = this.getSqlTransact(transaction);
         let implicitIncludes: string[] = [];
         [query, implicitIncludes] = this.transformQueryWhere(query);
@@ -140,7 +138,7 @@ export class DbImpl<T extends ModelT<PkType>, TInstance, TAttributes> implements
         let [result, created] = await this.model.findOrCreate(findOrCreateOpts);
         return [result && this.wrapResult(result, implicitIncludes), created];
     }
-    async findAndCountAll(query?: QueryT, transaction?: TransactionImpl) {
+    async findAndCountAll(query?: QueryT<T>, transaction?: TransactionImpl) {
         let sqlTransact = this.getSqlTransact(transaction);
         let implicitIncludes: string[] = [];
         if (query) [query, implicitIncludes] = this.transformQuery(query);
@@ -161,7 +159,7 @@ export class DbImpl<T extends ModelT<PkType>, TInstance, TAttributes> implements
             results: this.wrapResults(results.rows, implicitIncludes)
         };
     }
-    async findAll(query?: QueryT, transaction?: TransactionImpl) {
+    async findAll(query?: QueryT<T>, transaction?: TransactionImpl) {
         let sqlTransact = this.getSqlTransact(transaction);
         let implicitIncludes: string[] = [];
         if (query) [query, implicitIncludes] = this.transformQuery(query);
@@ -179,10 +177,10 @@ export class DbImpl<T extends ModelT<PkType>, TInstance, TAttributes> implements
         
         return this.wrapResults(results, implicitIncludes);
     }
-    async all(query?: QueryT, transaction?: TransactionImpl) {
+    async all(query?: QueryT<T>, transaction?: TransactionImpl) {
         return await this.findAll(query, transaction);
     }
-    async count(query?: CountQueryT, transaction?: TransactionImpl) {
+    async count(query?: CountQueryT<T>, transaction?: TransactionImpl) {
         let sqlTransact = this.getSqlTransact(transaction);
         let implicitIncludes: string[] = [];
         if (query) [query, implicitIncludes] = this.transformQuery(query);
@@ -210,7 +208,7 @@ export class DbImpl<T extends ModelT<PkType>, TInstance, TAttributes> implements
         return result;
     }
     
-    async update(query: number | string | T | QueryT, replace: Object, returning: boolean = false, transaction?: TransactionImpl): Promise<[boolean | number, any]> {
+    async update(query: number | string | T | QueryT<T>, replace: Object, returning: boolean = false, transaction?: TransactionImpl): Promise<[boolean | number, any]> {
         if (!query) {
             throw new Error(`Db.update query parameter was falsey: ${query}`);
         }
@@ -229,7 +227,7 @@ export class DbImpl<T extends ModelT<PkType>, TInstance, TAttributes> implements
                 delete (<any>query).limit;
             }
             if (returning || filterAfter) {
-                let results = await this.model.findAll(<QueryT>query);
+                let results = await this.model.findAll(<QueryT<T>>query);
                 if (filterAfter) results = results.slice(0, limit);
                 let ids = results.map((result) => (<any>result).id);
                 query = { where: { id: { $in: ids } } };
@@ -254,7 +252,7 @@ export class DbImpl<T extends ModelT<PkType>, TInstance, TAttributes> implements
         return [affected, results];
     }
     @Transaction()
-    async updateOrCreate(query: Sql.WhereOptions, defaults: Object | T, transaction?: TransactionImpl): Promise<[T, boolean]> {
+    async updateOrCreate(query: WhereOptions<T>, defaults: Object | T, transaction?: TransactionImpl): Promise<[T, boolean]> {
         let [result, created] = await this.findOrCreate(query, defaults);
         if (!created) {
             let worked = await this.update({ where: query }, defaults, false);
@@ -266,7 +264,7 @@ export class DbImpl<T extends ModelT<PkType>, TInstance, TAttributes> implements
         return [result, created];
     }
     
-    async destroy(query: number | string | T | DestroyQueryT, transaction?: TransactionImpl): Promise<any> {
+    async destroy(query: number | string | T | DestroyQueryT<T>, transaction?: TransactionImpl): Promise<any> {
         let sqlTransact = this.getSqlTransact(transaction);
         let implicitIncludes: string[] = [];
         if (this.isId(query)) query = { where: { id: query } };
@@ -279,7 +277,7 @@ export class DbImpl<T extends ModelT<PkType>, TInstance, TAttributes> implements
     private isId(query: any): query is (number | string) {
         return typeof query === 'number' || typeof query == 'string';
     }
-    private isT(query: T | QueryT): query is T {
+    private isT(query: T | QueryT<T>): query is T {
         return !!(<T>query).id;
     }
     
@@ -295,7 +293,7 @@ export class DbImpl<T extends ModelT<PkType>, TInstance, TAttributes> implements
             if (!propMeta) throw new Error(`Could not find model property metadata for property ${this.modelFn.name || this.modelFn}.${propName}.`);
             
             let transformFn: { (val: any): any } = directTransformFn;
-            if (propMeta.type == Types.DATE) transformFn = (dateStr) => new Date(dateStr);
+            if (propMeta.type == Types.date) transformFn = (dateStr) => new Date(dateStr);
             allProps.push({columnName: propMeta.columnName || propName, propertyName: propName, transformFn: transformFn});
         }
         
