@@ -1,7 +1,7 @@
 {
-    "name": "miter",
-    "version": "0.5.1",
-    "description": "A typescript web framework based on ExpressJs based loosely on SailsJs",
+    "name": "miter-sequelize",
+    "version": "0.5.10",
+    "description": " A sequelize ORM implementation for the Miter framework",
     "scripts": {
         "test": "bash ./scripts/test.sh",
         "test-once": "bash ./scripts/test.sh once",
@@ -25,9 +25,10 @@
         "chai-as-promised": "^6.0.0",
         "express": "^4.14.0",
         "jsonwebtoken": "^7.4.1",
-        "miter": "^0.5.4",
+        "miter": "^0.5.10",
         "mocha": "^3.2.0",
         "mocha-typescript": "^1.0.23",
+        "sequelize": "^3.24.6",
         "sinon": "^2.1.0",
         "sinon-chai": "^2.10.0",
         "ts-node": "^3.0.2",
@@ -36,13 +37,15 @@
     },
     "dependencies": {
         "@types/express": "^4.0.33",
+        "@types/lodash.clonedeep": "^4.5.3",
         "@types/node": "^7.0.0",
         "@types/sequelize": "^4.0.38",
-        "sequelize": "^3.24.6"
+        "lodash.clonedeep": "^4.5.0"
     },
     "peerDependencies": {
         "express": "^4.14.0",
-        "miter": "^0.5.4"
+        "miter": "^0.5.10",
+        "sequelize": "^3.24.6"
     },
     "keywords": [
         "miter",
@@ -56,10 +59,10 @@
     "private": false,
     "repository": {
         "type": "git",
-        "url": "git+https://github.com/aboveyou00/miter.git"
+        "url": "git+https://github.com/miter-framework/miter-sequelize.git"
     },
     "bugs": {
-        "url": "https://github.com/aboveyou00/miter/issues"
+        "url": "https://github.com/miter-framework/miter-sequelize/issues"
     },
-    "homepage": "https://github.com/aboveyou00/miter#readme"
+    "homepage": "https://github.com/miter-framework/miter-sequelize#readme"
 }

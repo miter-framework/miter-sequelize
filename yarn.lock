@@ -84,6 +84,12 @@
   dependencies:
     "@types/node" "*"
 
+"@types/lodash.clonedeep@^4.5.3":
+  version "4.5.3"
+  resolved "https://registry.yarnpkg.com/@types/lodash.clonedeep/-/lodash.clonedeep-4.5.3.tgz#d42cfba3d929a4e1177a775142ce2a9444e384cf"
+  dependencies:
+    "@types/lodash" "*"
+
 "@types/lodash@*", "@types/lodash@^4.14.37":
   version "4.14.81"
   resolved "https://registry.yarnpkg.com/@types/lodash/-/lodash-4.14.81.tgz#c944b38118615fa54be6cac1ef7ba5326ff70d6e"
@@ -1009,6 +1015,10 @@ lodash._isiterateecall@^3.0.0:
   version "3.0.9"
   resolved "https://registry.yarnpkg.com/lodash._isiterateecall/-/lodash._isiterateecall-3.0.9.tgz#5203ad7ba425fae842460e696db9cf3e6aac057c"
 
+lodash.clonedeep@^4.5.0:
+  version "4.5.0"
+  resolved "https://registry.yarnpkg.com/lodash.clonedeep/-/lodash.clonedeep-4.5.0.tgz#e23f3f9c4f8fbdde872529c1071857a086e5ccef"
+
 lodash.create@3.1.1:
   version "3.1.1"
   resolved "https://registry.yarnpkg.com/lodash.create/-/lodash.create-3.1.1.tgz#d7f2849f0dbda7e04682bb8cd72ab022461debe7"
@@ -1141,9 +1151,9 @@ minimist@~0.0.1:
   version "0.0.10"
   resolved "https://registry.yarnpkg.com/minimist/-/minimist-0.0.10.tgz#de3f98543dbf96082be48ad1a0c7cda836301dcf"
 
-miter@^0.5.4:
-  version "0.5.4"
-  resolved "https://registry.yarnpkg.com/miter/-/miter-0.5.4.tgz#497e04ac1bdbe2c74af7c4db4112b51cf6e4dca7"
+miter@^0.5.10:
+  version "0.5.10"
+  resolved "https://registry.yarnpkg.com/miter/-/miter-0.5.10.tgz#81fe9e4290f4a46f127750a3b1c46de73ca154d4"
   dependencies:
     "@types/body-parser" "^0.0.33"
     "@types/cli-color" "^0.3.29"
@@ -1170,7 +1180,6 @@ miter@^0.5.4:
     path "^0.12.7"
     pluralize "^3.0.0"
     reflect-metadata "^0.1.8"
-    root-require "^0.3.1"
     send "^0.15.2"
     sequelize "^3.24.6"
     typescript "2.3.4"
@@ -1298,10 +1307,6 @@ package-json@^4.0.0:
     registry-auth-token "^3.0.1"
     registry-url "^3.0.3"
     semver "^5.1.0"
-
-packpath@~0.1.0:
-  version "0.1.0"
-  resolved "https://registry.yarnpkg.com/packpath/-/packpath-0.1.0.tgz#a521534222dfeaa9c612ef0c640ec399149ecdd8"
 
 parse-json@^2.2.0:
   version "2.2.0"
@@ -1507,12 +1512,6 @@ retry-as-promised@^2.0.0:
   dependencies:
     bluebird "^3.4.6"
     debug "^2.6.9"
-
-root-require@^0.3.1:
-  version "0.3.1"
-  resolved "https://registry.yarnpkg.com/root-require/-/root-require-0.3.1.tgz#95e1554d63cc869a2abde3e3bfc9bbaaa1edacd3"
-  dependencies:
-    packpath "~0.1.0"
 
 safe-buffer@5.1.1, safe-buffer@^5.0.1, safe-buffer@~5.1.0, safe-buffer@~5.1.1:
   version "5.1.1"

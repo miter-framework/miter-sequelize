@@ -1,4 +1,4 @@
-import { Injectable, Name, OrmMetadata, Logger, LoggerCore, ClsNamespaceService, TransactionT } from 'miter';
+import { Injectable, Name, OrmMetadata, DatabaseMetadata, Logger, LoggerCore, ClsNamespaceService, TransactionT } from 'miter';
 import { TransactionImpl } from './impl/transaction-impl';
 import * as __Sequelize from 'sequelize';
 import { SequelizeORMService } from '../services/sequelize-orm.service';
@@ -9,6 +9,7 @@ export class Sequelize {
     constructor(
         private ormService: SequelizeORMService,
         private ormMeta: OrmMetadata,
+        private dbMeta: DatabaseMetadata,
         private loggerCore: LoggerCore,
         private logger: Logger
     ) {
@@ -23,8 +24,8 @@ export class Sequelize {
         this._initialized = true;
         
         let orm = this.ormMeta;
-        if (!orm.enabled || !orm.db) return;
-        let db = orm.db;
+        if (!orm.enabled || !this.dbMeta) return;
+        let db = this.dbMeta!;
         
         this.sql = new __Sequelize(db.name, db.user, db.password, {
             host: db.host.domain,
@@ -63,7 +64,7 @@ export class Sequelize {
     }
     
     get currentTransaction(): TransactionT | undefined {
-        return this.ormService.currentTransaction
+        return this.ormService.currentTransaction;
     }
     set currentTransaction(val: TransactionT | undefined) {
         this.ormService.currentTransaction = val;
@@ -74,7 +75,7 @@ export class Sequelize {
         if (typeof parentTransaction === 'undefined') parentTransaction = this.currentTransaction;
         let sqlTransact = parentTransaction && (<TransactionImpl>parentTransaction).sync();
         if (!sqlTransact) sqlTransact = await this.sql.transaction();
-        else sqlTransact = await this.sql.transaction(<any>{ transaction: sqlTransact }); //Cast to any is cheating, because the typings are wrong
+        else sqlTransact = await this.sql.transaction(<any>{ transaction: sqlTransact }); //Sequelize typings are wrong
         
         let t = new TransactionImpl(transactionName, sqlTransact!, parentTransaction || null);
         this.currentTransaction = t;

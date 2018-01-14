@@ -135,7 +135,7 @@ export class DbImpl<T extends ModelT<PkType>, TInstance, TAttributes> implements
             defaults: <any>defaults || {},
             transaction: sqlTransact
         });
-        let [result, created] = await this.model.findOrCreate(findOrCreateOpts);
+        let [result, created] = await this.model.findOrCreate(<any>findOrCreateOpts);
         return [result && this.wrapResult(result, implicitIncludes), created];
     }
     async findAndCountAll(query?: QueryT<T>, transaction?: TransactionImpl) {
@@ -214,8 +214,9 @@ export class DbImpl<T extends ModelT<PkType>, TInstance, TAttributes> implements
         }
         let sqlTransact = this.getSqlTransact(transaction);
         let implicitIncludes: string[] = [];
-        if (this.isId(query)) query = { where: { id: query } };
-        else if (this.isT(query)) query = { where: { id: query.id } };
+        //TODO: check if the ID is the correct PkType
+        if (this.isId(query)) query = <any>{ where: { id: query } };
+        else if (this.isT(query)) query = <any>{ where: { id: query.id } };
         else {
             let include = (<any>query).include;
             if (include && include.length && !returning) throw new Error(`Cannot have explicit includes in update when returning = false.`);
@@ -227,10 +228,10 @@ export class DbImpl<T extends ModelT<PkType>, TInstance, TAttributes> implements
                 delete (<any>query).limit;
             }
             if (returning || filterAfter) {
-                let results = await this.model.findAll(<QueryT<T>>query);
+                let results = await this.model.findAll(<any>query);
                 if (filterAfter) results = results.slice(0, limit);
                 let ids = results.map((result) => (<any>result).id);
-                query = { where: { id: { $in: ids } } };
+                query = <any>{ where: { id: { $in: ids } } };
             }
         }
         
@@ -246,7 +247,7 @@ export class DbImpl<T extends ModelT<PkType>, TInstance, TAttributes> implements
         let [affected, results]: [number, any[]] = await this.model.update(<any>replace, _.merge({}, { transaction: sqlTransact }, <any>query));
         
         if (returning) {
-            let returningResults = await this.model.findAll(_.merge({}, { transaction: sqlTransact }, <QueryT>query));
+            let returningResults = await this.model.findAll(_.merge({}, { transaction: sqlTransact }, <any>query));
             results = this.wrapResults(returningResults, implicitIncludes);
         }
         return [affected, results];
@@ -267,8 +268,9 @@ export class DbImpl<T extends ModelT<PkType>, TInstance, TAttributes> implements
     async destroy(query: number | string | T | DestroyQueryT<T>, transaction?: TransactionImpl): Promise<any> {
         let sqlTransact = this.getSqlTransact(transaction);
         let implicitIncludes: string[] = [];
-        if (this.isId(query)) query = { where: { id: query } };
-        else if (this.isT(query)) query = { where: { id: query.id } };
+        //TODO: check if the ID is the correct PkType
+        if (this.isId(query)) query = <any>{ where: { id: query } };
+        else if (this.isT(query)) query = <any>{ where: { id: query.id } };
         else [query, implicitIncludes] = this.transformQuery(query);
         if (implicitIncludes.length && query && (<any>query).limit) throw new Error(`Model.destroy with limit and with a query containing implicit includes is not implemented`);
         return await this.model.destroy(_.merge({}, { transaction: sqlTransact }, query));
@@ -357,7 +359,7 @@ export class DbImpl<T extends ModelT<PkType>, TInstance, TAttributes> implements
             if (!propMeta) throw new Error(`Could not find model belongs-to metadata for property ${this.modelFn.name || this.modelFn}.${propName}.`);
             
             let fkey = propMeta.foreignKey;
-            if (fkey && typeof fkey !== 'string') fkey = fkey.name;
+            // if (fkey && typeof fkey !== 'string') fkey = fkey.name;
             if (!fkey) throw new Error(`Could not get foreign key for belongs-to property ${this.modelFn.name || this.modelFn}.${propName}`);
             transforms.push({
                 type: 'belongs-to',
@@ -375,7 +377,7 @@ export class DbImpl<T extends ModelT<PkType>, TInstance, TAttributes> implements
             if (!propMeta) throw new Error(`Could not find model has-one metadata for property ${this.modelFn.name || this.modelFn}.${propName}.`);
             
             let fkey = propMeta.foreignKey;
-            if (fkey && typeof fkey !== 'string') fkey = fkey.name;
+            // if (fkey && typeof fkey !== 'string') fkey = fkey.name;
             if (!fkey) throw new Error(`Could not get foreign key for has-one property ${this.modelFn.name || this.modelFn}.${propName}`);
             transforms.push({
                 type: 'has-one',
@@ -393,7 +395,7 @@ export class DbImpl<T extends ModelT<PkType>, TInstance, TAttributes> implements
             if (!propMeta) throw new Error(`Could not find model has-many metadata for property ${this.modelFn.name || this.modelFn}.${propName}.`);
             
             let fkey = propMeta.foreignKey;
-            if (fkey && typeof fkey !== 'string') fkey = fkey.name;
+            // if (fkey && typeof fkey !== 'string') fkey = fkey.name;
             if (!fkey) throw new Error(`Could not get foreign key for has-many property ${this.modelFn.name || this.modelFn}.${propName}`);
             transforms.push({
                 type: 'has-many',

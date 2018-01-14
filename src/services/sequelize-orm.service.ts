@@ -1,13 +1,15 @@
 import { Service, Name, Logger, LoggerCore, ORMService, TransactionT, ClsNamespaceService,
-         OrmMetadata, ModelT, PkType, StaticModelT, ModelMetadata, ModelMetadataSym,
+         OrmMetadata, DatabaseMetadata, ModelT, PkType, StaticModelT, ModelMetadata, ModelMetadataSym,
          OrmTransformService, PropMetadata, PropMetadataSym, AssociationMetadata, ModelPropertiesSym,
          ModelHasManyAssociationsSym, HasManyMetadata, HasManyMetadataSym,
          ModelBelongsToAssociationsSym, BelongsToMetadata, BelongsToMetadataSym,
          ModelHasOneAssociationsSym, HasOneMetadata, HasOneMetadataSym,
-         Injector, TransactionService } from 'miter';
+         Injector, TransactionService, Types } from 'miter';
 import { Sequelize } from '../orm/sequelize';
 import { Model as SqlModel } from 'sequelize';
 import { DbImpl } from '../orm/impl/db-impl';
+import cloneDeep = require('lodash.clonedeep');
+import * as SqlTypes from './meta/types';
 
 type AssociationTypeDef = {
     sqlName: string,
@@ -26,6 +28,7 @@ export class SequelizeORMService extends ORMService {
         private logger: Logger,
         private loggerCore: LoggerCore,
         private ormMeta: OrmMetadata,
+        private dbMeta: DatabaseMetadata,
         private ormTransform: OrmTransformService
     ) {
         super(injector, namespace);
@@ -55,9 +58,9 @@ export class SequelizeORMService extends ORMService {
     }
     
     async stop() {
-        await super.stop();
-        
         await this.sql.close();
+        
+        await super.stop();
     }
     
     transaction(transactionName: string, transaction: TransactionT | null | undefined) {
@@ -87,25 +90,85 @@ export class SequelizeORMService extends ORMService {
         if (dupTable) throw new Error(`Defining multiple models with the same table name! ${dupTable.name || dupTable} and ${modelFn.name || modelFn}`);
         this.modelsByTableName.set(modelOptions.tableName, modelFn);
         
-        let columns = {};
+        let columns: any = {};
         let props: string[] = Reflect.getOwnMetadata(ModelPropertiesSym, modelProto) || [];
         for (let q = 0; q < props.length; q++) {
             let propName: string = props[q];
             let propMeta: PropMetadata = Reflect.getOwnMetadata(PropMetadataSym, modelProto, propName);
             if (!propMeta) throw new Error(`Could not find model property metadata for property ${modelFn.name || modelFn}.${propName}.`);
             
-            // let columnMeta = <any>_.cloneDeep(propMeta);
-            let columnMeta = propMeta;
+            let columnMeta = cloneDeep(propMeta);
             columnMeta = this.ormTransform.transformColumn(columnMeta) || columnMeta;
-            
             (columnMeta as any).field = columnMeta.columnName || this.ormTransform.transformColumnName(propName) || propName;
-            // delete columnMeta.columnName;
+            columnMeta.type = <any>this.translateColumnType(columnMeta);
             
-            (<any>columns)[propName] = columnMeta;
+            columns[propName] = columnMeta;
         }
         
         let model = this.sql.define(modelOptions.tableName, columns, modelOptions);
         this.models.set(modelFn, <any>model);
+    }
+    private translateColumnType(meta: PropMetadata) {
+        let metaType = meta.type!;
+        switch (metaType) {
+        case Types.string:
+            return SqlTypes.STRING;
+        case Types.text:
+            return SqlTypes.TEXT;
+        case Types.integer:
+            return SqlTypes.INTEGER;
+        case Types.bigint:
+            return SqlTypes.BIGINT;
+        case Types.float:
+            return SqlTypes.FLOAT;
+        case Types.real:
+            return SqlTypes.REAL;
+        case Types.double:
+            return SqlTypes.DOUBLE;
+        case Types.decimal:
+            return SqlTypes.DECIMAL;
+        case Types.date:
+            return SqlTypes.DATE;
+        case Types.dateonly:
+            return SqlTypes.DATEONLY;
+        case Types.boolean:
+            return SqlTypes.BOOLEAN;
+        case Types.enum:
+            if (!meta.enumValues || !meta.enumValues.length) throw new Error(`Can't use the enum column type without defining enumValues.`);
+            return SqlTypes.ENUM(meta.enumValues);
+        case Types.uuid:
+            return SqlTypes.UUID;
+        case Types.virtual:
+            return SqlTypes.VIRTUAL;
+        
+        //PostgreSQL only:
+        case Types.array:
+            this.assertIsPostgreSQL(`The ${metaType} column type is only available in PostgreSQL.`);
+            return SqlTypes.ARRAY;
+        case Types.json:
+            this.assertIsPostgreSQL(`The ${metaType} column type is only available in PostgreSQL.`);
+            return SqlTypes.JSON;
+        case Types.jsonb:
+            this.assertIsPostgreSQL(`The ${metaType} column type is only available in PostgreSQL.`);
+            return SqlTypes.JSONB;
+        case Types.blob:
+            this.assertIsPostgreSQL(`The ${metaType} column type is only available in PostgreSQL.`);
+            return SqlTypes.BLOB;
+        case Types.range:
+            this.assertIsPostgreSQL(`The ${metaType} column type is only available in PostgreSQL.`);
+            return SqlTypes.RANGE;
+        case Types.geometry:
+            this.assertIsPostgreSQL(`The ${metaType} column type is only available in PostgreSQL.`);
+            return SqlTypes.GEOMETRY;
+            
+        default:
+            throw new Error(`Unknown column type: ${metaType}`);
+        }
+    }
+    private assertIsPostgreSQL(error: string) {
+        if (!this.dbMeta) throw new Error(`No database configuration found. What gives?`);
+        let dialect = this.dbMeta.dialect;
+        if (dialect !== 'postgres') throw new Error(error);
     }
     
     private reflectAssociations(models: StaticModelT<ModelT<PkType>>[]) {
@@ -165,12 +228,11 @@ export class SequelizeORMService extends ORMService {
                 let foreignModel = this.models.get(foreignModelFn);
                 if (!foreignModel) throw new Error(`Could not create ${def.msgName} association ${modelFn.name || modelFn}.${propName} to model that has not been reflected: ${foreignModelFn.name || foreignModelFn}`);
                 
-                // let sqlMeta = _.cloneDeep(propMeta);
-                let sqlMeta = propMeta;
+                let sqlMeta = cloneDeep(propMeta);
                 sqlMeta = this.ormTransform.transformAssociation(sqlMeta) || sqlMeta;
                 if (def.transform) def.transform(sqlMeta, propName);
                 
-                (<any>model)[def.sqlName](foreignModel, propMeta);
+                (<any>model)[def.sqlName](foreignModel, sqlMeta);
             }
         }
     }
