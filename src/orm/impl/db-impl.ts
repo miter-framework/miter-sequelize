@@ -4,7 +4,7 @@ import { StaticModelT, ModelT, PkType, Db, QueryT, FindOrCreateQueryT, CountQuer
          WhereOptions } from 'miter';
 
 //Decorators
-import { Transaction, Name, Types } from 'miter';
+import { Transaction, Name } from 'miter';
 
 //ORM/Properties
 import { PropMetadata, PropMetadataSym, ModelPropertiesSym, ForeignModelSource,
@@ -13,6 +13,7 @@ import { PropMetadata, PropMetadataSym, ModelPropertiesSym, ForeignModelSource,
          ModelHasManyAssociationsSym, HasManyMetadataSym, HasManyMetadata } from 'miter';
 
 import * as Sql from 'sequelize';
+import * as SqlTypes from '../../meta/types';
 import * as _ from 'lodash';
 
 import { Sequelize } from '../sequelize';
@@ -295,7 +296,7 @@ export class DbImpl<T extends ModelT<PkType>, TInstance, TAttributes> implements
             if (!propMeta) throw new Error(`Could not find model property metadata for property ${this.modelFn.name || this.modelFn}.${propName}.`);
             
             let transformFn: { (val: any): any } = directTransformFn;
-            if (propMeta.type == Types.date) transformFn = (dateStr) => new Date(dateStr);
+            if (<any>propMeta.type == SqlTypes.DATE) transformFn = (dateStr) => new Date(dateStr);
             allProps.push({columnName: propMeta.columnName || propName, propertyName: propName, transformFn: transformFn});
         }
         

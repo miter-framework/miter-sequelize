@@ -8,8 +8,7 @@ import { Service, Name, Logger, LoggerCore, ORMService, TransactionT, ClsNamespa
 import { Sequelize } from '../orm/sequelize';
 import { Model as SqlModel } from 'sequelize';
 import { DbImpl } from '../orm/impl/db-impl';
-import cloneDeep = require('lodash.clonedeep');
-import * as SqlTypes from './meta/types';
+import * as SqlTypes from '../meta/types';
 
 type AssociationTypeDef = {
     sqlName: string,
@@ -38,11 +37,14 @@ export class SequelizeORMService extends ORMService {
     private dbImplLogger: Logger;
     private sql: Sequelize;
     
+    private transactionService: TransactionService;
+    
     async start() {
         this.logger.verbose(`Initializing ORM...`);
         
         await super.start();
         
+        this.transactionService = this.injector.resolveInjectable(TransactionService)!;
         this.sql = this.injector.resolveInjectable(Sequelize)!;
         
         await this.sql.init();
@@ -81,11 +83,12 @@ export class SequelizeORMService extends ORMService {
         
         let meta: ModelMetadata = Reflect.getOwnMetadata(ModelMetadataSym, modelProto);
         if (!meta) throw new Error(`Expecting class with @Model decorator, could not reflect model properties for ${modelProto}.`);
-        // let modelOptions = _.cloneDeep(meta);
         let modelOptions = meta;
         modelOptions = this.ormTransform.transformModel(modelOptions) || modelOptions;
         
         modelOptions.tableName = modelOptions.tableName || this.ormTransform.transformModelName(modelFn.name) || modelFn.name;
+        Reflect.defineMetadata(ModelMetadataSym, modelOptions, modelProto);
+        
         let dupTable = this.modelsByTableName.get(modelOptions.tableName);
         if (dupTable) throw new Error(`Defining multiple models with the same table name! ${dupTable.name || dupTable} and ${modelFn.name || modelFn}`);
         this.modelsByTableName.set(modelOptions.tableName, modelFn);
@@ -97,10 +100,12 @@ export class SequelizeORMService extends ORMService {
             let propMeta: PropMetadata = Reflect.getOwnMetadata(PropMetadataSym, modelProto, propName);
             if (!propMeta) throw new Error(`Could not find model property metadata for property ${modelFn.name || modelFn}.${propName}.`);
             
-            let columnMeta = cloneDeep(propMeta);
+            let columnMeta = propMeta;
             columnMeta = this.ormTransform.transformColumn(columnMeta) || columnMeta;
-            (columnMeta as any).field = columnMeta.columnName || this.ormTransform.transformColumnName(propName) || propName;
+            (<any>columnMeta).field = columnMeta.columnName || this.ormTransform.transformColumnName(propName) || propName;
+            (<any>columnMeta).miterType = columnMeta.type;
             columnMeta.type = <any>this.translateColumnType(columnMeta);
+            Reflect.defineMetadata(PropMetadataSym, columnMeta, modelProto, propName)
             
             columns[propName] = columnMeta;
         }
@@ -228,9 +233,10 @@ export class SequelizeORMService extends ORMService {
                 let foreignModel = this.models.get(foreignModelFn);
                 if (!foreignModel) throw new Error(`Could not create ${def.msgName} association ${modelFn.name || modelFn}.${propName} to model that has not been reflected: ${foreignModelFn.name || foreignModelFn}`);
                 
-                let sqlMeta = cloneDeep(propMeta);
+                let sqlMeta = propMeta;
                 sqlMeta = this.ormTransform.transformAssociation(sqlMeta) || sqlMeta;
                 if (def.transform) def.transform(sqlMeta, propName);
+                Reflect.defineMetadata(def.metadataSym, sqlMeta, modelProto, propName);
                 
                 (<any>model)[def.sqlName](foreignModel, sqlMeta);
             }
