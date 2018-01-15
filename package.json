@@ -1,6 +1,6 @@
 {
     "name": "miter-sequelize",
-    "version": "0.5.10",
+    "version": "0.6.0",
     "description": " A sequelize ORM implementation for the Miter framework",
     "scripts": {
         "test": "bash ./scripts/test.sh",
@@ -25,7 +25,7 @@
         "chai-as-promised": "^6.0.0",
         "express": "^4.14.0",
         "jsonwebtoken": "^7.4.1",
-        "miter": "^0.5.10",
+        "miter": "^0.6.0",
         "mocha": "^3.2.0",
         "mocha-typescript": "^1.0.23",
         "sequelize": "^3.24.6",
@@ -42,7 +42,7 @@
     },
     "peerDependencies": {
         "express": "^4.14.0",
-        "miter": "^0.5.10",
+        "miter": "^0.6.0",
         "sequelize": "^3.24.6"
     },
     "keywords": [
