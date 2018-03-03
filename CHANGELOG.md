@@ -1,7 +1,7 @@
 
 
 <a name="0.6.1"></a>
-## [0.6.1](https://github.com/miter-framework/miter-sequelize/tree/0.6.0..HEAD) (_Future_)
+## [0.6.1](https://github.com/miter-framework/miter-sequelize/tree/0.6.0..0.6.1) (2018-03-03)
 
 ### Bug Fixes
 

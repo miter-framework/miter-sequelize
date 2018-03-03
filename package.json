@@ -1,6 +1,6 @@
 {
     "name": "miter-sequelize",
-    "version": "0.6.0",
+    "version": "0.6.1",
     "description": " A sequelize ORM implementation for the Miter framework",
     "scripts": {
         "test": "bash ./scripts/test.sh",
