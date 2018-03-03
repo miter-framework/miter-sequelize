@@ -19,6 +19,8 @@ import * as _ from 'lodash';
 import { Sequelize } from '../sequelize';
 import { TransactionImpl } from './transaction-impl';
 
+import { extractSetters } from '../../util/extract-setters';
+
 type CopyValMeta = {
     columnName: string,
     propertyName: string,
@@ -627,16 +629,22 @@ export class DbImpl<T extends ModelT<PkType>, TInstance, TAttributes> implements
         }).bind(this);
     }
     
-    fromJson(json: any): T {
-        return this.wrapResult(json, []);
+    fromJson(json: any, invokeSetters: boolean = true): T {
+        return this.wrapResult(json, [], invokeSetters);
     }
-    private wrapResult(result: TInstance, implicitIncludes: string[]): T {
+    private wrapResult(result: TInstance, implicitIncludes: string[], invokeSetters: boolean = true): T {
         let t = new this.modelFn();
         this.copyVals(result, t);
         // if (implicitIncludes.length) {
         //     this.logger.error(result);
         //     throw new Error(`Not implemented! wrapResult with implicitIncludes: [${implicitIncludes.map(str => "'" + str + "'").join(', ')}]`);
         // }
+        if (invokeSetters && typeof result === 'object') {
+            let setterNames = extractSetters(t);
+            setterNames.forEach(name => {
+                if (name in result) (<any>t)[name] = (<any>result)[name];
+            });
+        }
         return this.transformResult(result, t, implicitIncludes);
     }
     private wrapResults(results: TInstance[], implicitIncludes: string[]): T[] {

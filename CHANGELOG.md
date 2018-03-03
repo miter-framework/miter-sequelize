@@ -1,6 +1,14 @@
 
 
+<a name="0.6.1"></a>
+## [0.6.1](https://github.com/miter-framework/miter-sequelize/tree/0.6.0..HEAD) (_Future_)
+
+### Bug Fixes
+
+* **db-impl:** ensure setters are invoked when creating models using db.fromJson
+
+
 <a name="0.6.0"></a>
-## [0.6.0](https://github.com/miter-framework/miter/tree/0.6.0) (_Future_)
+## [0.6.0](https://github.com/miter-framework/miter-sequelize/tree/0.6.0) (2018-01-15)
 
 Initial version
